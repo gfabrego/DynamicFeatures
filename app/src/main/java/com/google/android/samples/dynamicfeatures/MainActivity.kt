@@ -80,10 +80,10 @@ class MainActivity : AppCompatActivity() {
     private fun buildClickListener(): View.OnClickListener =
         View.OnClickListener {
             when (it.id) {
-                R.id.btn_load_kotlin -> launchActivity(kotlinSampleClassname)
-                R.id.btn_load_java -> launchActivity(javaSampleClassname)
-                R.id.btn_load_native -> launchActivity(nativeSampleClassname)
-                R.id.btn_load_assets -> onAssetsRequested()
+                R.id.btn_load_kotlin -> loadAndLaunchModule(moduleKotlin)
+                R.id.btn_load_java -> loadAndLaunchModule(moduleJava)
+                R.id.btn_load_native -> loadAndLaunchModule(moduleNative)
+                R.id.btn_load_assets -> loadAndLaunchModule(moduleAssets)
             }
         }
 
@@ -101,16 +101,6 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         splitInstallManager.unregisterListener(modulesInstallStateUpdateListener)
         super.onPause()
-    }
-
-    private fun onAssetsRequested() {
-        if (splitInstallManager.installedModules.contains(moduleAssets)) {
-            displayButtons()
-            displayAssets()
-        } else {
-            toastAndLog("Assets module is not installed")
-            loadAndLaunchModule(moduleAssets)
-        }
     }
 
     private fun displayAssets() {

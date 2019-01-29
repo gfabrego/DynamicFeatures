@@ -25,7 +25,7 @@ android {
         applicationId names.applicationId
         minSdkVersion versions.minSdk
         targetSdkVersion versions.targetSdk
-        versionCode 3
+        versionCode 4
         versionName "1.0"
     }
 
@@ -41,14 +41,15 @@ android {
         targetCompatibility = '1.8'
     }
 
-    dynamicFeatures = [':features:assets']
+    dynamicFeatures = [
+        ":features:assets",
+        ":features:kotlin",
+        ":features:java",
+        ":features:native"
+    ]
 }
 
 dependencies {
-
-    implementation project(':features:kotlin')
-    implementation project(':features:java')
-    implementation project(':features:native')
 
     // Libraries which can be re-used in other modules should use the `api` keyword.
     // This way they can be shared with dependent feature modules.
