@@ -23,6 +23,8 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.play.core.splitinstall.SplitInstallManagerFactory
+import com.google.android.play.core.splitinstall.SplitInstallRequest
 
 private const val packageName = "com.google.android.samples.dynamicfeatures.ondemand"
 private const val kotlinSampleClassname = "$packageName.KotlinSampleActivity"
@@ -32,13 +34,17 @@ private const val nativeSampleClassname = "$packageName.NativeSampleActivity"
 /** Activity that displays buttons and handles loading of feature modules. */
 class MainActivity : AppCompatActivity() {
 
+    private val splitInstallManager by lazy { SplitInstallManagerFactory.create(this) }
+
+    private val moduleAssets by lazy { getString(R.string.module_assets) }
+
     private val clickListener by lazy {
         View.OnClickListener {
             when (it.id) {
                 R.id.btn_load_kotlin -> launchActivity(kotlinSampleClassname)
                 R.id.btn_load_java -> launchActivity(javaSampleClassname)
                 R.id.btn_load_native -> launchActivity(nativeSampleClassname)
-                R.id.btn_load_assets -> displayAssets()
+                R.id.btn_load_assets -> onAssetsRequested()
             }
         }
     }
@@ -50,20 +56,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** Display assets loaded from the assets feature module. */
+    private fun onAssetsRequested() {
+        if (splitInstallManager.installedModules.contains(moduleAssets)) {
+            displayAssets()
+        } else {
+            toastAndLog("Assets module is not installed")
+            requestAssetsInstall()
+        }
+    }
+
     private fun displayAssets() {
         // Get the asset manager with a refreshed context, to access content of newly installed apk.
         val assetManager = createPackageContext(packageName, 0).assets
         // Now treat it like any other asset file.
         val assets = assetManager.open("assets.txt")
-        val assetContent = assets.bufferedReader()
-                .use {
-                    it.readText()
-                }
+        val assetContent = assets.bufferedReader().use { it.readText() }
+        AlertDialog.Builder(this).setTitle("Asset content").setMessage(assetContent).show()
+    }
 
-        AlertDialog.Builder(this)
-                .setTitle("Asset content")
-                .setMessage(assetContent)
-                .show()
+    private fun requestAssetsInstall() {
+        SplitInstallRequest.newBuilder().addModule(moduleAssets).build().also {
+            splitInstallManager.startInstall(it)
+                .addOnCompleteListener { toastAndLog("Assets module installed") }
+                .addOnSuccessListener { toastAndLog("Assets module install started") }
+                .addOnFailureListener { toastAndLog("Assets module can't be loaded") }
+        }
     }
 
     /** Launch an activity by its class name. */
@@ -81,7 +98,6 @@ class MainActivity : AppCompatActivity() {
 
     /** Set all click listeners required for the buttons on the UI. */
     private fun setupClickListener() {
-
         setClickListener(R.id.btn_load_kotlin, clickListener)
         setClickListener(R.id.btn_load_java, clickListener)
         setClickListener(R.id.btn_load_assets, clickListener)
