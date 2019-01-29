@@ -84,6 +84,9 @@ class MainActivity : AppCompatActivity() {
                 R.id.btn_load_java -> loadAndLaunchModule(moduleJava)
                 R.id.btn_load_native -> loadAndLaunchModule(moduleNative)
                 R.id.btn_load_assets -> loadAndLaunchModule(moduleAssets)
+                R.id.btn_install_all_now -> installAllFeaturesNow()
+                R.id.btn_install_all_deferred -> installAllFeaturesDeferred()
+                R.id.btn_request_uninstall -> requestUninstall()
             }
         }
 
@@ -139,6 +142,9 @@ class MainActivity : AppCompatActivity() {
         setClickListener(R.id.btn_load_java, clickListener)
         setClickListener(R.id.btn_load_assets, clickListener)
         setClickListener(R.id.btn_load_native, clickListener)
+        setClickListener(R.id.btn_install_all_now, clickListener)
+        setClickListener(R.id.btn_install_all_deferred, clickListener)
+        setClickListener(R.id.btn_request_uninstall, clickListener)
     }
 
     private fun setClickListener(id: Int, listener: View.OnClickListener) {
@@ -190,11 +196,38 @@ class MainActivity : AppCompatActivity() {
         SplitInstallRequest.newBuilder().addModule(moduleName).build().also { splitInstallManager.startInstall(it) }
         updateProgressMessage("Starting install for $moduleName")
     }
-}
 
-fun MainActivity.toastAndLog(text: String) {
-    Toast.makeText(this, text, Toast.LENGTH_LONG).show()
-    Log.d(TAG, text)
+    private fun installAllFeaturesNow() {
+        SplitInstallRequest.newBuilder()
+            .addModule(moduleKotlin)
+            .addModule(moduleJava)
+            .addModule(moduleNative)
+            .addModule(moduleAssets)
+            .build()
+            .also { request ->
+                splitInstallManager.startInstall(request)
+                    .addOnSuccessListener { toastAndLog("Loading ${request.moduleNames}") }
+            }
+    }
+
+    private fun installAllFeaturesDeferred() {
+        val modules = listOf(moduleKotlin, moduleJava, moduleAssets, moduleNative)
+        splitInstallManager.deferredInstall(modules)
+            .addOnSuccessListener { toastAndLog("Deferred installation of $modules") }
+    }
+
+    private fun requestUninstall() {
+        toastAndLog("Requesting uninstall of all modules. This will happen at some point in the future.")
+        splitInstallManager.installedModules.toList().let { installedModules ->
+            splitInstallManager.deferredUninstall(installedModules)
+                .addOnSuccessListener { toastAndLog("Uninstalling $installedModules") }
+        }
+    }
+
+    private fun toastAndLog(text: String) {
+        Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+        Log.d(TAG, text)
+    }
 }
 
 private const val TAG = "DynamicFeatures"
