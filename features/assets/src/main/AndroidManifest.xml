@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright 2018 Google LLC.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +18,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:dist="http://schemas.android.com/apk/distribution"
     package="com.google.android.samples.dynamicfeatures.ondemand.assets">
-
+    
+    <dist:module
+        dist:onDemand="true"
+        dist:title="@string/module_assets">
+        <dist:fusing dist:include="true" />
+    </dist:module>
+    
     <!-- This feature module doesn't contain code. -->
     <application android:hasCode="false" />
 
