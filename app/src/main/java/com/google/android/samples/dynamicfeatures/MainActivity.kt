@@ -28,6 +28,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.Group
 import com.google.android.play.core.splitinstall.SplitInstallManagerFactory
 import com.google.android.play.core.splitinstall.SplitInstallRequest
+import com.google.android.play.core.splitinstall.SplitInstallSessionState
+import com.google.android.play.core.splitinstall.SplitInstallStateUpdatedListener
+import com.google.android.play.core.splitinstall.model.SplitInstallSessionStatus
 
 private const val packageName = "com.google.android.samples.dynamicfeatures.ondemand"
 private const val kotlinSampleClassname = "$packageName.KotlinSampleActivity"
@@ -39,13 +42,42 @@ class MainActivity : AppCompatActivity() {
 
     private val splitInstallManager by lazy { SplitInstallManagerFactory.create(this) }
     private val moduleAssets by lazy { getString(R.string.module_assets) }
+    private val moduleKotlin by lazy { getString(R.string.module_kotlin) }
+    private val moduleJava by lazy { getString(R.string.module_java) }
+    private val moduleNative by lazy { getString(R.string.module_native) }
 
     private lateinit var progress: Group
     private lateinit var buttons: Group
     private lateinit var progressBar: ProgressBar
     private lateinit var progressText: TextView
 
-    private val clickListener by lazy {
+    private val clickListener by lazy { buildClickListener() }
+    private val modulesInstallStateUpdateListener by lazy { buildStateUpdateListener() }
+
+    private fun buildStateUpdateListener(): SplitInstallStateUpdatedListener =
+        SplitInstallStateUpdatedListener { state ->
+            val multiInstall = state.moduleNames().size > 1
+            state.moduleNames().forEach { name ->
+                when (state.status()) {
+                    //  In order to see this, the application has to be uploaded to the Play Store.
+                    SplitInstallSessionStatus.DOWNLOADING -> displayLoadingState(state, "Downloading $name")
+                    /*
+                    This may occur when attempting to download a sufficiently large module.
+
+                    In order to see this, the application has to be uploaded to the Play Store.
+                    Then features can be requested until the confirmation path is triggered.
+                    */
+                    SplitInstallSessionStatus.REQUIRES_USER_CONFIRMATION ->
+                        startIntentSender(state.resolutionIntent()?.intentSender, null, 0, 0, 0)
+                    SplitInstallSessionStatus.INSTALLED -> onSuccessfulLoad(name, launch = !multiInstall)
+                    SplitInstallSessionStatus.INSTALLING -> displayLoadingState(state, "Installing $name")
+                    SplitInstallSessionStatus.FAILED ->
+                        toastAndLog("Error: ${state.errorCode()} for module ${state.moduleNames()}")
+                }
+            }
+        }
+
+    private fun buildClickListener(): View.OnClickListener =
         View.OnClickListener {
             when (it.id) {
                 R.id.btn_load_kotlin -> launchActivity(kotlinSampleClassname)
@@ -54,7 +86,6 @@ class MainActivity : AppCompatActivity() {
                 R.id.btn_load_assets -> onAssetsRequested()
             }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,14 +93,23 @@ class MainActivity : AppCompatActivity() {
         initializeViews()
     }
 
-    /** Display assets loaded from the assets feature module. */
+    override fun onResume() {
+        super.onResume()
+        splitInstallManager.registerListener(modulesInstallStateUpdateListener)
+    }
+
+    override fun onPause() {
+        splitInstallManager.unregisterListener(modulesInstallStateUpdateListener)
+        super.onPause()
+    }
+
     private fun onAssetsRequested() {
         if (splitInstallManager.installedModules.contains(moduleAssets)) {
             displayButtons()
             displayAssets()
         } else {
             toastAndLog("Assets module is not installed")
-            requestAssetsInstall()
+            loadAndLaunchModule(moduleAssets)
         }
     }
 
@@ -82,22 +122,12 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this).setTitle("Asset content").setMessage(assetContent).show()
     }
 
-    private fun requestAssetsInstall() {
-        updateProgressMessage("Starting install for assets module")
-        SplitInstallRequest.newBuilder().addModule(moduleAssets).build().also {
-            splitInstallManager.startInstall(it)
-                .addOnCompleteListener { displayAssets() }
-                .addOnSuccessListener { toastAndLog("Assets module install started") }
-                .addOnFailureListener { displayButtons() }
-        }
-    }
-
     /** Launch an activity by its class name. */
     private fun launchActivity(className: String) {
         Intent().setClassName(packageName, className)
-                .also {
-                    startActivity(it)
-                }
+            .also {
+                startActivity(it)
+            }
     }
 
     /** Set up all view variables. */
@@ -138,6 +168,37 @@ class MainActivity : AppCompatActivity() {
     private fun displayButtons() {
         progress.visibility = View.GONE
         buttons.visibility = View.VISIBLE
+    }
+
+    private fun displayLoadingState(state: SplitInstallSessionState, message: String) {
+        displayProgress()
+        progressBar.max = state.totalBytesToDownload().toInt()
+        progressBar.progress = state.bytesDownloaded().toInt()
+        updateProgressMessage(message)
+    }
+
+    private fun onSuccessfulLoad(moduleName: String, launch: Boolean) {
+        if (launch) {
+            when (moduleName) {
+                moduleKotlin -> launchActivity(kotlinSampleClassname)
+                moduleJava -> launchActivity(javaSampleClassname)
+                moduleNative -> launchActivity(nativeSampleClassname)
+                moduleAssets -> displayAssets()
+            }
+        }
+        displayButtons()
+    }
+
+    private fun loadAndLaunchModule(moduleName: String) {
+        updateProgressMessage("Loading module $moduleName")
+        // Skip loading if the module already is installed. Perform success action directly.
+        if (splitInstallManager.installedModules.contains(moduleName)) {
+            updateProgressMessage("Already installed")
+            onSuccessfulLoad(moduleName, launch = true)
+            return
+        }
+        SplitInstallRequest.newBuilder().addModule(moduleName).build().also { splitInstallManager.startInstall(it) }
+        updateProgressMessage("Starting install for $moduleName")
     }
 }
 

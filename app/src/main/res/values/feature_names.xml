@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="module_assets" translatable="false">assets</string>
+    <string name="module_kotlin" translatable="false">kotlin</string>
+    <string name="module_java" translatable="false">java</string>
+    <string name="module_native" translatable="false">native</string>
 </resources>
