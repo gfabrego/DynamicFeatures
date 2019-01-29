@@ -20,9 +20,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.Group
 import com.google.android.play.core.splitinstall.SplitInstallManagerFactory
 import com.google.android.play.core.splitinstall.SplitInstallRequest
 
@@ -35,8 +38,12 @@ private const val nativeSampleClassname = "$packageName.NativeSampleActivity"
 class MainActivity : AppCompatActivity() {
 
     private val splitInstallManager by lazy { SplitInstallManagerFactory.create(this) }
-
     private val moduleAssets by lazy { getString(R.string.module_assets) }
+
+    private lateinit var progress: Group
+    private lateinit var buttons: Group
+    private lateinit var progressBar: ProgressBar
+    private lateinit var progressText: TextView
 
     private val clickListener by lazy {
         View.OnClickListener {
@@ -58,6 +65,7 @@ class MainActivity : AppCompatActivity() {
     /** Display assets loaded from the assets feature module. */
     private fun onAssetsRequested() {
         if (splitInstallManager.installedModules.contains(moduleAssets)) {
+            displayButtons()
             displayAssets()
         } else {
             toastAndLog("Assets module is not installed")
@@ -75,11 +83,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestAssetsInstall() {
+        updateProgressMessage("Starting install for assets module")
         SplitInstallRequest.newBuilder().addModule(moduleAssets).build().also {
             splitInstallManager.startInstall(it)
-                .addOnCompleteListener { toastAndLog("Assets module installed") }
+                .addOnCompleteListener { displayAssets() }
                 .addOnSuccessListener { toastAndLog("Assets module install started") }
-                .addOnFailureListener { toastAndLog("Assets module can't be loaded") }
+                .addOnFailureListener { displayButtons() }
         }
     }
 
@@ -93,7 +102,15 @@ class MainActivity : AppCompatActivity() {
 
     /** Set up all view variables. */
     private fun initializeViews() {
+        bindViews()
         setupClickListener()
+    }
+
+    private fun bindViews() {
+        buttons = findViewById(R.id.buttons)
+        progress = findViewById(R.id.progress)
+        progressBar = findViewById(R.id.progress_bar)
+        progressText = findViewById(R.id.progress_text)
     }
 
     /** Set all click listeners required for the buttons on the UI. */
@@ -106,6 +123,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun setClickListener(id: Int, listener: View.OnClickListener) {
         findViewById<View>(id).setOnClickListener(listener)
+    }
+
+    private fun updateProgressMessage(message: String) {
+        if (progress.visibility != View.VISIBLE) displayProgress()
+        progressText.text = message
+    }
+
+    private fun displayProgress() {
+        progress.visibility = View.VISIBLE
+        buttons.visibility = View.GONE
+    }
+
+    private fun displayButtons() {
+        progress.visibility = View.GONE
+        buttons.visibility = View.VISIBLE
     }
 }
 
