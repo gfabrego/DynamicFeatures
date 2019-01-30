@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-include ':app', ':features:java', ':features:kotlin', ':features:assets', ':features:native'
+include ':app', ':features:java', ':features:kotlin', ':features:assets', ':features:native', ':features:heavy'
