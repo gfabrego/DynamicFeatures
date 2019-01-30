@@ -73,6 +73,10 @@ class MainActivity : AppCompatActivity() {
                         startIntentSender(state.resolutionIntent()?.intentSender, null, 0, 0, 0)
                     SplitInstallSessionStatus.INSTALLED -> onSuccessfulLoad(name, launch = !multiInstall)
                     SplitInstallSessionStatus.INSTALLING -> displayLoadingState(state, "Installing $name")
+                    SplitInstallSessionStatus.CANCELED -> {
+                        toastAndLog("Installation cancelled")
+                        displayButtons()
+                    }
                     SplitInstallSessionStatus.FAILED ->
                         toastAndLog("Error: ${state.errorCode()} for module ${state.moduleNames()}")
                 }
@@ -213,13 +217,15 @@ class MainActivity : AppCompatActivity() {
             .also { request ->
                 splitInstallManager.startInstall(request)
                     .addOnSuccessListener { toastAndLog("Loading ${request.moduleNames}") }
+                    .addOnFailureListener { toastAndLog("Failed to install all ${request.moduleNames}") }
             }
     }
 
     private fun installAllFeaturesDeferred() {
-        val modules = listOf(moduleKotlin, moduleJava, moduleAssets, moduleNative)
+        val modules = listOf(moduleKotlin, moduleJava, moduleAssets, moduleNative, moduleHeavy)
         splitInstallManager.deferredInstall(modules)
             .addOnSuccessListener { toastAndLog("Deferred installation of $modules") }
+            .addOnFailureListener { toastAndLog("Failed to install all $modules") }
     }
 
     private fun requestUninstall() {
@@ -227,6 +233,7 @@ class MainActivity : AppCompatActivity() {
         splitInstallManager.installedModules.toList().let { installedModules ->
             splitInstallManager.deferredUninstall(installedModules)
                 .addOnSuccessListener { toastAndLog("Uninstalling $installedModules") }
+                .addOnFailureListener { toastAndLog("Failed to uninstall $installedModules") }
         }
     }
 
