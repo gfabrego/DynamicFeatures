@@ -94,6 +94,19 @@
         />
     
     <Button
+        android:id="@+id/btn_load_heavy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:text="@string/load_heavy_code"
+        app:layout_constraintBottom_toTopOf="@+id/btn_install_all_now"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_load_assets"
+        />
+    
+    <Button
         android:id="@+id/btn_install_all_now"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -103,7 +116,7 @@
         app:layout_constraintBottom_toTopOf="@+id/btn_install_all_deferred"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_load_assets"
+        app:layout_constraintTop_toBottomOf="@+id/btn_load_heavy"
         />
     
     <Button
@@ -172,7 +185,7 @@
         android:id="@+id/buttons"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:constraint_referenced_ids="btn_load_native,btn_load_assets,btn_load_java, btn_load_kotlin,instructions,btn_install_all_now, btn_install_all_deferred,btn_request_uninstall"
+        app:constraint_referenced_ids="btn_load_native,btn_load_assets,btn_load_java, btn_load_kotlin,instructions,btn_install_all_now, btn_install_all_deferred,btn_request_uninstall,btn_load_heavy"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

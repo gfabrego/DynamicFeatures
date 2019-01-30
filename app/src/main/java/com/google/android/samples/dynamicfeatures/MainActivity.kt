@@ -36,6 +36,7 @@ private const val packageName = "com.google.android.samples.dynamicfeatures.onde
 private const val kotlinSampleClassname = "$packageName.KotlinSampleActivity"
 private const val javaSampleClassname = "$packageName.JavaSampleActivity"
 private const val nativeSampleClassname = "$packageName.NativeSampleActivity"
+private const val heavySampleClassName = "$packageName.heavy.HeavyActivity"
 
 /** Activity that displays buttons and handles loading of feature modules. */
 class MainActivity : AppCompatActivity() {
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private val moduleKotlin by lazy { getString(R.string.module_kotlin) }
     private val moduleJava by lazy { getString(R.string.module_java) }
     private val moduleNative by lazy { getString(R.string.module_native) }
+    private val moduleHeavy by lazy { getString(R.string.module_heavy) }
 
     private lateinit var progress: Group
     private lateinit var buttons: Group
@@ -84,6 +86,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.btn_load_java -> loadAndLaunchModule(moduleJava)
                 R.id.btn_load_native -> loadAndLaunchModule(moduleNative)
                 R.id.btn_load_assets -> loadAndLaunchModule(moduleAssets)
+                R.id.btn_load_heavy -> loadAndLaunchModule(moduleHeavy)
                 R.id.btn_install_all_now -> installAllFeaturesNow()
                 R.id.btn_install_all_deferred -> installAllFeaturesDeferred()
                 R.id.btn_request_uninstall -> requestUninstall()
@@ -142,6 +145,7 @@ class MainActivity : AppCompatActivity() {
         setClickListener(R.id.btn_load_java, clickListener)
         setClickListener(R.id.btn_load_assets, clickListener)
         setClickListener(R.id.btn_load_native, clickListener)
+        setClickListener(R.id.btn_load_heavy, clickListener)
         setClickListener(R.id.btn_install_all_now, clickListener)
         setClickListener(R.id.btn_install_all_deferred, clickListener)
         setClickListener(R.id.btn_request_uninstall, clickListener)
@@ -180,6 +184,7 @@ class MainActivity : AppCompatActivity() {
                 moduleJava -> launchActivity(javaSampleClassname)
                 moduleNative -> launchActivity(nativeSampleClassname)
                 moduleAssets -> displayAssets()
+                moduleHeavy -> launchActivity(heavySampleClassName)
             }
         }
         displayButtons()
@@ -203,6 +208,7 @@ class MainActivity : AppCompatActivity() {
             .addModule(moduleJava)
             .addModule(moduleNative)
             .addModule(moduleAssets)
+            .addModule(moduleHeavy)
             .build()
             .also { request ->
                 splitInstallManager.startInstall(request)
