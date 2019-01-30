@@ -59,27 +59,32 @@ class MainActivity : AppCompatActivity() {
     private fun buildStateUpdateListener(): SplitInstallStateUpdatedListener =
         SplitInstallStateUpdatedListener { state ->
             val multiInstall = state.moduleNames().size > 1
-            state.moduleNames().forEach { name ->
-                when (state.status()) {
-                    //  In order to see this, the application has to be uploaded to the Play Store.
-                    SplitInstallSessionStatus.DOWNLOADING -> displayLoadingState(state, "Downloading $name")
-                    /*
-                    This may occur when attempting to download a sufficiently large module.
+            val moduleNamesList = state.moduleNames().joinToString(", ")
+            when (state.status()) {
+                //  In order to see this, the application has to be uploaded to the Play Store.
+                SplitInstallSessionStatus.DOWNLOADING -> displayLoadingState(state, "Downloading $moduleNamesList")
+                /*
+                This may occur when attempting to download a sufficiently large module.
 
-                    In order to see this, the application has to be uploaded to the Play Store.
-                    Then features can be requested until the confirmation path is triggered.
-                    */
-                    SplitInstallSessionStatus.REQUIRES_USER_CONFIRMATION ->
-                        startIntentSender(state.resolutionIntent()?.intentSender, null, 0, 0, 0)
-                    SplitInstallSessionStatus.INSTALLED -> onSuccessfulLoad(name, launch = !multiInstall)
-                    SplitInstallSessionStatus.INSTALLING -> displayLoadingState(state, "Installing $name")
-                    SplitInstallSessionStatus.CANCELED -> {
-                        toastAndLog("Installation cancelled")
-                        displayButtons()
+                In order to see this, the application has to be uploaded to the Play Store.
+                Then features can be requested until the confirmation path is triggered.
+                */
+                SplitInstallSessionStatus.REQUIRES_USER_CONFIRMATION ->
+                    startIntentSender(state.resolutionIntent()?.intentSender, null, 0, 0, 0)
+                SplitInstallSessionStatus.INSTALLED -> {
+                    if (multiInstall) {
+                        onModulesInstalled()
+                    } else {
+                        onSuccessfulLoadLaunch(state.moduleNames().first())
                     }
-                    SplitInstallSessionStatus.FAILED ->
-                        toastAndLog("Error: ${state.errorCode()} for module ${state.moduleNames()}")
                 }
+                SplitInstallSessionStatus.INSTALLING -> displayLoadingState(state, "Installing $moduleNamesList")
+                SplitInstallSessionStatus.CANCELED -> {
+                    toastAndLog("Installation cancelled")
+                    displayButtons()
+                }
+                SplitInstallSessionStatus.FAILED ->
+                    toastAndLog("Error: ${state.errorCode()} for module ${state.moduleNames()}")
             }
         }
 
@@ -181,16 +186,18 @@ class MainActivity : AppCompatActivity() {
         updateProgressMessage(message)
     }
 
-    private fun onSuccessfulLoad(moduleName: String, launch: Boolean) {
-        if (launch) {
-            when (moduleName) {
-                moduleKotlin -> launchActivity(kotlinSampleClassname)
-                moduleJava -> launchActivity(javaSampleClassname)
-                moduleNative -> launchActivity(nativeSampleClassname)
-                moduleAssets -> displayAssets()
-                moduleHeavy -> launchActivity(heavySampleClassName)
-            }
+    private fun onSuccessfulLoadLaunch(moduleName: String) {
+        when (moduleName) {
+            moduleKotlin -> launchActivity(kotlinSampleClassname)
+            moduleJava -> launchActivity(javaSampleClassname)
+            moduleNative -> launchActivity(nativeSampleClassname)
+            moduleAssets -> displayAssets()
+            moduleHeavy -> launchActivity(heavySampleClassName)
         }
+        displayButtons()
+    }
+
+    private fun onModulesInstalled() {
         displayButtons()
     }
 
@@ -199,7 +206,7 @@ class MainActivity : AppCompatActivity() {
         // Skip loading if the module already is installed. Perform success action directly.
         if (splitInstallManager.installedModules.contains(moduleName)) {
             updateProgressMessage("Already installed")
-            onSuccessfulLoad(moduleName, launch = true)
+            onSuccessfulLoadLaunch(moduleName)
             return
         }
         SplitInstallRequest.newBuilder().addModule(moduleName).build().also { splitInstallManager.startInstall(it) }
